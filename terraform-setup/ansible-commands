@@ -1,0 +1,37 @@
+1. cat ~/.ssh/known_hosts
+2. ansible jenkins -i /etc/ansible/hosts -m ping
+3. sudo rm -rf ~/.ansible/facts
+
+#Open your Ansible control node (Ansible Controller) and create an inventory file:
+4. sudo nano /etc/ansible/hosts
+
+5. #Add your Jenkins Master and Agent instances using their private IPs:
+
+[jenkins]
+jenkins_master ansible_host=192.168.1.228 ansible_user=ec2-user ansible_private_key_file=~/.ssh/ansible_ssh
+jenkins_agent ansible_host=192.168.1.40 ansible_user=ec2-user ansible_private_key_file=~/.ssh/ansible_ssh
+
+##Ensure your SSH key has the correct permissions:
+7. chmod 600 ~/.ssh/ansible_ssh
+#Run the following command to check if Ansible can connect to the Jenkins servers:
+8.ansible jenkins -i /etc/ansible/hosts -m ping
+#If everything is set up correctly, you should see a success response like this:
+9.jenkins_master | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+  }
+jenkins_agent | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+ }
+
+ ansible-playbook -i /home/ec2-user/inventory.ini /home/ec2-user/install_jenkins.ym
+
+### TROUBLE SHOOTING Steps:
+
+## if ping not succeded 
+1. ansible jenkinsAgent -i /etc/ansible/hosts -m ping -e "ansible_ssh_common_args='-o StrictHostKeyChecking=no'"
+## adding hosts 
+cd /etc/ansible/hosts
+add the hosts for 
+

@@ -1,0 +1,150 @@
+---
+- name: Install and Configure Jenkins on Master
+  hosts: jenkins_master
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3  # Ensure Python 3 is used
+    jenkins_repo_url: "https://pkg.jenkins.io/redhat/jenkins.repo"
+    jenkins_repo_key_url: "https://pkg.jenkins.io/redhat/jenkins.io.key"
+    java_version: "java-17-amazon-corretto-devel"
+
+  tasks:
+    - name: Check if Python 3 is installed
+      command: python3 --version
+      register: python3_check
+      ignore_errors: yes
+
+    - name: Install Python 3 if not present
+      yum:
+        name: python3
+        state: present
+      when: python3_check.failed
+
+    - name: Install Java Development Kit (JDK) 17 - Amazon Corretto
+      yum:
+        name: "{{ java_version }}"
+        state: present
+
+    - name: Add Jenkins repository
+      get_url:
+        url: "{{ jenkins_repo_url }}"
+        dest: /etc/yum.repos.d/jenkins.repo
+        mode: '0644'
+
+    - name: Import Jenkins GPG key
+      rpm_key:
+        state: present
+        key: "{{ jenkins_repo_key_url }}"
+
+    - name: Manually download and import Jenkins GPG key
+      shell: |
+        curl -fsSL {{ jenkins_repo_key_url }} -o /etc/pki/rpm-gpg/jenkins.io.key
+        rpm --import /etc/pki/rpm-gpg/jenkins.io.key
+      args:
+        executable: /bin/bash
+      become: yes
+
+    - name: Verify if the Jenkins GPG key exists in rpm
+      shell: rpm -qi gpg-pubkey | grep 'Jenkins'
+      register: rpm_key_check
+      failed_when: rpm_key_check.rc != 0
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Install Jenkins
+      yum:
+        name: jenkins
+        state: present
+        disable_gpg_check: yes  # Disable GPG check
+      become: yes
+
+    - name: Start and enable Jenkins service
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Set Environment Variables for Java and Maven
+      block:
+        - name: Set JAVA_HOME
+          lineinfile:
+            path: /etc/profile
+            line: "export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto"
+            create: yes
+
+        - name: Set MAVEN_HOME
+          lineinfile:
+            path: /etc/profile
+            line: "export MAVEN_HOME=/usr/share/maven"
+            create: yes
+
+        - name: Update PATH with Maven and Java
+          lineinfile:
+            path: /etc/profile
+            line: "export PATH=$PATH:/usr/share/maven/bin:/usr/lib/jvm/java-17-amazon-corretto/bin"
+            create: yes
+
+    - name: Source /etc/profile to apply changes
+      shell: source /etc/profile
+
+    - name: Ensure Jenkins is running
+      uri:
+        url: "http://localhost:8080/login"
+        method: GET
+        status_code: 200
+      register: jenkins_status
+      retries: 5
+      delay: 10
+      until: jenkins_status.status == 200
+
+    - name: Retrieve Jenkins unlock key from file
+      command: sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: unlock_key
+      when: jenkins_status.status == 200
+
+    - name: Debug Jenkins unlock key
+      debug:
+        msg: "Unlock key: {{ unlock_key.stdout }}"
+
+
+- name: Configure Jenkins Agent
+  hosts: jenkins_agent
+  become: yes
+  vars:
+    jenkins_master_ip: "{{ jenkins_master_ip }}"  # Replace with your master IP
+
+  tasks:
+    - name: Create Jenkins agent directory
+      file:
+        path: /var/jenkins/agent
+        state: directory
+        mode: '0755'
+
+    - name: Download the Jenkins agent jar
+      get_url:
+        url: "http://{{ jenkins_master_ip }}:8080/jnlpJars/agent.jar"
+        dest: /var/jenkins/agent/agent.jar
+
+    - name: Wait for the agent-secret file to be created (retry up to 5 minutes)
+      wait_for:
+        path: /var/lib/jenkins/secrets/agent-secret
+        state: present
+        delay: 10
+        timeout: 300
+
+    - name: Retrieve Jenkins agent secret
+      command: sudo cat /var/lib/jenkins/secrets/agent-secret
+      register: agent_secret  
+
+    - name: Create Jenkins agent service
+      template:
+        src: /home/ec2-user/templates/jenkins_agent.service.j2
+        dest: /etc/systemd/system/jenkins-agent.service
+      vars:
+        agent_secret: "{{ agent_secret.stdout }}"
+
+    - name: Start Jenkins agent service
+      systemd:
+        name: jenkins-agent
+        state: started
+        enabled: yes

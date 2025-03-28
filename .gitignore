@@ -1,0 +1,17 @@
+# Ignore everything in the 'target' directory
+./target/*
+
+# Ignore Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Ignore backup files
+*.bak
+*.swp
+*~
+
+# Ignore Terraform directory
+.terraform/
+
+# Ignore Terraform plan files
+*.tfplan
