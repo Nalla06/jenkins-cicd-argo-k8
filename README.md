@@ -1,4 +1,5 @@
 # Implementation of the Entire Advanced CI/CD Pipeline with Major DevOps Tools
+![DevOps](images/my-image.png)
 
 This project sets up a Jenkins CI/CD pipeline on AWS using Terraform. It provisions a Virtual Private Cloud (VPC), subnets, security groups, and EC2 instances for Ansible, Jenkins Master, and Jenkins Agent.
 
@@ -6,9 +7,8 @@ This project sets up a Jenkins CI/CD pipeline on AWS using Terraform. It provisi
 
 This project includes a DevOps pipeline.
 
-Here is an image from the `images/` folder:
 
-![DevOps](images/my-image.png)
+
 
 
 ## Overview
@@ -199,3 +199,10 @@ terraform destroy -auto-approve
 ---
 This README provides an overview of the Terraform-based setup for Jenkins and Ansible on AWS. Further documentation will include Jenkins setup and pipeline automation.
 
+Here is an image from the `images/` folder:
+
+![DevOps](images/image-01.png)
+![DevOps](images/image-02.png)
+![DevOps](images/image-03.png)
+![DevOps](images/image-04.png)
+![DevOps](images/image-05.png)
