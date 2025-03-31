@@ -6,7 +6,7 @@ This project sets up a Jenkins CI/CD pipeline on AWS using Terraform. It provisi
 
 # My Project
 
-This project includes a DevOps pipeline.
+This project includes a DevOps pipelines.
 
 
 
