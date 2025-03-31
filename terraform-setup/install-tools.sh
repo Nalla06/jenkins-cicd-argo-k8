@@ -65,6 +65,15 @@ sleep 60
 ARGOCD_ADMIN_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)
 echo "ArgoCD Admin Password: $ARGOCD_ADMIN_PASSWORD"
 
+# Install SonarQube
+# Install Docker Image for SonarQube
+sudo docker pull sonarqube
+sudo docker run -d --name sonarqube -p 9000:9000 sonarqube
+
+# Wait for SonarQube to be ready
+echo "Waiting for SonarQube to be ready..."
+sleep 120
+
 # Install SonarQube Scanner (for Maven)
 sudo apt-get install -y sonar-scanner
 
