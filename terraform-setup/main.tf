@@ -2,48 +2,57 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Generate a new SSH key pair
-resource "tls_private_key" "ansible_ssh_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
+# IAM Instance Profile for Jenkins EC2
+resource "aws_iam_instance_profile" "jenkins_instance_profile" {
+  name = "jenkins-instance-profile"
+  role = aws_iam_role.jenkins_role.name
 }
 
-# Store the private key in AWS SSM Parameter Store
-resource "aws_ssm_parameter" "ansible_ssh_key" {
-  name  = "/ssh/ansible-key"
-  type  = "SecureString"
-  value = tls_private_key.ansible_ssh_key.private_key_pem
+# IAM Role for Jenkins
+resource "aws_iam_role" "jenkins_role" {
+  name               = "jenkins-instance-role"
+  assume_role_policy = data.aws_iam_policy_document.jenkins_assume_role_policy.json
 }
 
-# Store the public key in AWS SSM Parameter Store
-resource "aws_ssm_parameter" "ansible_ssh_pub_key" {
-  name  = "/ssh/ansible-key-pub"
-  type  = "String"
-  value = tls_private_key.ansible_ssh_key.public_key_openssh
+# IAM Policy for Jenkins (to allow EC2 to interact with other AWS resources)
+resource "aws_iam_policy" "jenkins_policy" {
+  name        = "jenkins-instance-policy"
+  description = "Policy for Jenkins EC2 instance"
+
+  policy = data.aws_iam_policy_document.jenkins_policy_document.json
 }
 
-# Save private key locally for use
-resource "local_file" "ansible_ssh_key" {
-  content  = tls_private_key.ansible_ssh_key.private_key_pem
-  filename = "~/.ssh/ansible_ssh"
+# Attach IAM policy to the EC2 instance role
+resource "aws_iam_role_policy_attachment" "jenkins_policy_attachment" {
+  role       = aws_iam_role.jenkins_role.name
+  policy_arn = aws_iam_policy.jenkins_policy.arn
 }
 
-# Ensure the key is deleted when terraform destroy runs
-resource "null_resource" "cleanup_ansible_ssh_key" {
-  provisioner "local-exec" {
-    command = "rm -f ~/.ssh/ansible_ssh"
-  }
-
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-
-  lifecycle {
-    prevent_destroy = false
+# Assume Role Policy for Jenkins EC2 Instance Role
+data "aws_iam_policy_document" "jenkins_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
   }
 }
 
-# Create VPC
+# IAM Policy Document for Jenkins EC2 Instance (Example: Full EC2 access)
+data "aws_iam_policy_document" "jenkins_policy_document" {
+  statement {
+    actions   = ["ec2:DescribeInstances", "ec2:StartInstances", "ec2:StopInstances"]
+    resources = ["*"]
+  }
+
+  statement {
+    actions   = ["s3:ListBucket", "s3:GetObject"]
+    resources = ["arn:aws:s3:::your-bucket-name/*"]
+  }
+}
+
+# VPC Creation
 resource "aws_vpc" "my_vpc" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -53,28 +62,63 @@ resource "aws_vpc" "my_vpc" {
   }
 }
 
-# Create Subnets
+# Subnets Creation
 resource "aws_subnet" "subnet1" {
-  vpc_id     = aws_vpc.my_vpc.id
-  cidr_block = var.subnet1_cidr
-  map_public_ip_on_launch = true
+  vpc_id                  = aws_vpc.my_vpc.id
+  cidr_block              = var.subnet1_cidr
   availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
   tags = {
     Name = "Subnet1"
   }
 }
 
 resource "aws_subnet" "subnet2" {
-  vpc_id     = aws_vpc.my_vpc.id
-  cidr_block = var.subnet2_cidr
-  map_public_ip_on_launch = true
+  vpc_id                  = aws_vpc.my_vpc.id
+  cidr_block              = var.subnet2_cidr
   availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = true
   tags = {
     Name = "Subnet2"
   }
 }
 
-# Create Internet Gateway
+# Security Group for EC2 Instance (Allow SSH and Jenkins ports)
+resource "aws_security_group" "jenkins_sg" {
+  name        = "jenkins_sg"
+  description = "Security group for Jenkins server"
+  vpc_id      = aws_vpc.my_vpc.id 
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow from all IPs (you can limit to your IP for security)
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9000
+    to_port     = 9000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Internet Gateway for Public Access
 resource "aws_internet_gateway" "my_igw" {
   vpc_id = aws_vpc.my_vpc.id
   tags = {
@@ -107,110 +151,23 @@ resource "aws_route_table_association" "subnet2_association" {
   route_table_id = aws_route_table.my_route_table.id
 }
 
-# Create Ansible Controller Instance
-resource "aws_instance" "ansible_controller" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  subnet_id     = aws_subnet.subnet1.id
-  key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.sg_ansible_controller.id]
-
-    user_data = <<-EOF
-    #!/bin/bash
-
-    # Detect OS and install Ansible accordingly
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        if [[ "$ID" =~ ^(centos|rhel|amzn)$ ]]; then
-            sudo yum install -y epel-release
-            sudo yum install -y ansible
-        elif [[ "$ID" =~ ^(fedora)$ ]]; then
-            sudo dnf install -y ansible
-        else
-            echo "Unsupported Linux distribution: $ID"
-            exit 1
-        fi
-    else
-        echo "Cannot determine OS. Exiting."
-        exit 1
-    fi
-
-    # Set up SSH keys
-    mkdir -p /home/ec2-user/.ssh
-    echo "${tls_private_key.ansible_ssh_key.private_key_pem}" > /home/ec2-user/.ssh/ansible_ssh
-    chmod 600 /home/ec2-user/.ssh/ansible_ssh
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/ansible_ssh
-    echo "${tls_private_key.ansible_ssh_key.public_key_openssh}" >> /home/ec2-user/.ssh/authorized_keys
-    chmod 600 /home/ec2-user/.ssh/authorized_keys
-    ssh-keyscan github.com >> /home/ec2-user/.ssh/known_hosts
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/known_hosts
-
-    # Create Ansible directory structure
-    mkdir -p /home/ec2-user/ansible
-    cd /home/ec2-user/ansible
-
-    # Create inventory.ini file with Jenkins Master and Agent details
-    cat > /home/ec2-user/ansible/inventory.ini <<EOL
-    [jenkins]
-    ${aws_instance.jenkins_master.public_ip} ansible_user=ec2-user
-    ${aws_instance.jenkins_agent.public_ip} ansible_user=ec2-user
-
-    [jenkins:vars]
-    ansible_ssh_private_key_file=/home/ec2-user/.ssh/ansible_ssh
-    EOL
-
-    # Set appropriate permissions
-    chown -R ec2-user:ec2-user /home/ec2-user/ansible
-    chmod 700 /home/ec2-user/ansible
-    chmod 600 /home/ec2-user/ansible/inventory.ini
-
-    # Run initial Ansible playbook (Optional: you can link your playbook later)
-    # ansible-playbook -i /home/ec2-user/ansible/inventory.ini jenkins_playbook.yml
-  EOF
+# EC2 Instance for Jenkins
+resource "aws_instance" "jenkins_instance" {
+  ami                    = "ami-084568db4383264d4"  # Ubuntu AMI
+  instance_type          = "t2.large"
+  key_name               = var.key_name  # SSH key name variable
+  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
+  associate_public_ip_address = true
+  subnet_id              = aws_subnet.subnet1.id
+  iam_instance_profile   = aws_iam_instance_profile.jenkins_instance_profile.name
+  user_data              = file("install-tools.sh")
 
   tags = {
-    Name = "Ansiblecontroller"
-  }
-}
-  
-# Create Jenkins Master
-resource "aws_instance" "jenkins_master" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  subnet_id     = aws_subnet.subnet1.id
-  key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.sg_jenkins_master.id]
-
-  user_data = <<-EOF
-    #!/bin/bash
-    mkdir -p /home/ec2-user/.ssh
-    echo "${tls_private_key.ansible_ssh_key.public_key_openssh}" >> /home/ec2-user/.ssh/authorized_keys
-    chmod 600 /home/ec2-user/.ssh/authorized_keys
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
-  EOF
-
-  tags = {
-    Name = "JenkinsMaster"
+    Name = "Jenkins-EC2"
   }
 }
 
-# Create Jenkins Agent
-resource "aws_instance" "jenkins_agent" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  subnet_id     = aws_subnet.subnet1.id
-  key_name      = var.key_name
-  vpc_security_group_ids = [aws_security_group.sg_jenkins_agent.id]
-
-  user_data = <<-EOF
-    #!/bin/bash
-    mkdir -p /home/ec2-user/.ssh
-    echo "${tls_private_key.ansible_ssh_key.public_key_openssh}" >> /home/ec2-user/.ssh/authorized_keys
-    chmod 600 /home/ec2-user/.ssh/authorized_keys
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
-  EOF
-
-  tags = {
-    Name = "JenkinsAgent"
-  }
+# Output EC2 Public IP
+output "jenkins_instance_public_ip" {
+  value = aws_instance.jenkins_instance.public_ip
 }

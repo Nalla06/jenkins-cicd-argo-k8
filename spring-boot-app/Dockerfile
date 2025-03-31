@@ -1,13 +1,14 @@
-# You can change this base image to anything else
-# But make sure to use the correct version of Java
-FROM adoptopenjdk/openjdk11:alpine-jre
+# Use OpenJDK 11 as base image
+FROM openjdk:11-jre-slim
 
-# Simply the artifact path
-ARG artifact=target/spring-boot-web.jar
+# Create a working directory inside the container
+WORKDIR /app
 
-WORKDIR /opt/app
+# Copy the JAR file from target directory
+COPY target/*.jar app.jar
 
-COPY ${artifact} app.jar
+# Expose the port the application runs on (this is the default for Spring Boot)
+EXPOSE 8080
 
-# This should not be changed
-ENTRYPOINT ["java","-jar","app.jar"]
+# Run the Spring Boot JAR file
+ENTRYPOINT ["java", "-jar", "app.jar"]

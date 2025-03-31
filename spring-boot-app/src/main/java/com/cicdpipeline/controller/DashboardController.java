@@ -20,12 +20,12 @@ public class DashboardController {
     public String index(Model model) {
         model.addAttribute("title", "DevOps CI/CD Pipeline Dashboard");
         model.addAttribute("msg", "Continuous Integration and Deployment Platform");
-        
+
         // Add build information
         model.addAttribute("buildInfo", buildService.getCurrentBuildInfo());
         model.addAttribute("buildStatus", buildService.getBuildStatus());
         model.addAttribute("timestamp", System.currentTimeMillis());
-        
+
         return "index";
     }
 }

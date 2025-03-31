@@ -12,16 +12,9 @@ public class StartApplication {
 
     @GetMapping("/")
     public String index(final Model model) {
-        // Generic, descriptive title and message
         model.addAttribute("title", "DevOps CI/CD Pipeline Dashboard");
         model.addAttribute("msg", "Continuous Integration and Deployment Platform");
-        
-        // Optional: Add build status
-        model.addAttribute("buildStatus", "Operational");
-        
-        // Optional: Add timestamp for cache busting
         model.addAttribute("timestamp", System.currentTimeMillis());
-        
         return "index";
     }
 

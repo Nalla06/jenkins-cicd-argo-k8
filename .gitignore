@@ -15,3 +15,11 @@
 
 # Ignore Terraform plan files
 *.tfplan
+# Ignore Terraform variables
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Ignore sensitive Terraform files
+.env

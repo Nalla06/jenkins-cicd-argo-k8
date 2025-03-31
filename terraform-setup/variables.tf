@@ -1,53 +1,34 @@
-# Define the AWS region
+# AWS Region
 variable "aws_region" {
-  description = "The AWS region to deploy resources in"
+  description = "The AWS region to create resources"
   type        = string
-  default     = "us-east-1" # Change if needed
-}
-variable "key_name" {
-  description = "Name of the AWS key pair"
-  default     = "linux-key-pair"
+  default     = "us-east-1"
 }
 
-
-# Define the VPC CIDR block
+# VPC CIDR Block
 variable "vpc_cidr" {
   description = "The CIDR block for the VPC"
   type        = string
-  default     = "192.168.0.0/16"
+  default     = "10.0.0.0/16"
 }
 
-# Define the subnet CIDR blocks
+# Subnet 1 CIDR Block
 variable "subnet1_cidr" {
-  description = "The CIDR block for Subnet1"
+  description = "The CIDR block for the first subnet"
   type        = string
-  default     = "192.168.1.0/24"
+  default     = "10.0.1.0/24"
 }
 
+# Subnet 2 CIDR Block
 variable "subnet2_cidr" {
-  description = "The CIDR block for Subnet2"
+  description = "The CIDR block for the second subnet"
   type        = string
-  default     = "192.168.2.0/24"
+  default     = "10.0.2.0/24"
 }
 
-
-# Define the AMI ID
-variable "ami_id" {
-  description = "The AMI ID for the instances"
+# SSH Key Name
+variable "key_name" {
+  description = "The name of the SSH key pair to access the EC2 instance"
   type        = string
-  default     = "ami-0c614dee691cbbf37" # Replace with a preferred AMI
+  default     = "linux-key-pair"  # Change to your actual SSH key name
 }
-
-# Define the instance type
-variable "instance_type" {
-  description = "The instance type for the instances"
-  type        = string
-  default     = "t3.medium"
-}
-
-variable "private_key_path" {
-  description = "Path to the private SSH key for connecting to EC2 instances"
-  type        = string
-  default     = "~/.ssh/ansible_ssh"
-}
-
