@@ -160,26 +160,8 @@ resource "aws_instance" "jenkins_instance" {
   associate_public_ip_address = true
   subnet_id              = aws_subnet.subnet1.id
   iam_instance_profile   = aws_iam_instance_profile.jenkins_instance_profile.name
-  user_data = <<-EOF
-    #!/bin/bash
-    exec > /var/log/user_data.log 2>&1  # Redirect logs for debugging
 
-    echo "==== Updating System ===="
-    sudo apt update && sudo apt upgrade -y
-
-    echo "==== Running Installation Scripts ===="
-    wget https://raw.githubusercontent.com/your-repo/install-tools.sh -O /tmp/install-tools.sh
-    chmod +x /tmp/install-tools.sh
-    /tmp/install-tools.sh
-
-    wget https://raw.githubusercontent.com/your-repo/install-cd-tools.sh -O /tmp/install-cd-tools.sh
-    chmod +x /tmp/install-cd-tools.sh
-    /tmp/install-cd-tools.sh
-
-    echo "==== Setup Complete ===="
-    touch /home/ubuntu/setup_complete
-  EOF
-
+  user_data = file("jenkins-userdata.sh")
   tags = {
     Name = "Jenkins-EC2"
   }
@@ -194,11 +176,10 @@ resource "aws_instance" "argocd_instance" {
   associate_public_ip_address = true
   subnet_id              = aws_subnet.subnet2.id
   iam_instance_profile   = aws_iam_instance_profile.jenkins_instance_profile.name
-  user_data              = file("install-cd-tools.sh")  # Separate script for ArgoCD and Minikube
+  
+  user_data = file("argocd-userdata.sh")
 
-  tags = {
-    Name = "ArgoCD-EC2"
-  }
+  tags = { Name = "ArgoCD-EC2" }
 }
 
 # Output EC2 Public IP for ArgoCD
