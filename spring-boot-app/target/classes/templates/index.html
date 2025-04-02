@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"/>
+    <link data-th-href="@{/css/custom-pipeline.css?{id}(id=${timestamp})}" rel="stylesheet">
+    <title th:text="${title}">DevOps CI/CD Pipeline Dashboard</title>
+    <link rel="icon" type="image/png" href="/images/pipeline-icon.png">
+</head>
+<body class="bg-light">
+
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-code-branch mr-2"></i>CI/CD Pipeline Management
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Builds</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Deployments</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<main role="main" class="container mt-5 pt-4">
+    <!-- Hero Section -->
+    <section class="hero-section text-center mb-4">
+        <h1 th:text="${title}">DevOps CI/CD Pipeline Dashboard</h1>
+        <p th:text="${msg}">Continuous Integration and Deployment Platform</p>
+        <p>Timestamp: <span th:text="${timestamp}"></span></p>
+    </section>
+
+    <!-- Pipeline Status Section -->
+    <div class="row">
+        <!-- Build Status -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Build Status</h5>
+                </div>
+                <div class="card-body">
+                    <p th:text="${buildStatus}">Not Available</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Build Info -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Build Info</h5>
+                </div>
+                <div class="card-body">
+                    <p th:text="${buildInfo}">No information available</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deployment Status -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Deployment Status</h5>
+                </div>
+                <div class="card-body">
+                    <p th:text="${deploymentStatus}">Not Available</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Footer Section -->
+<footer class="footer mt-auto py-3 bg-dark text-white">
+    <div class="container text-center">
+        <span>&copy; 2024 DevOps Pipeline Dashboard</span>
+    </div>
+</footer>
+
+<!-- Optional JavaScript -->
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+<script data-th-src="@{/js/pipeline-dashboard.js}"></script>
+</body>
+</html>
