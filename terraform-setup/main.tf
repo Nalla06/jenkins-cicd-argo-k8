@@ -166,27 +166,6 @@ resource "aws_instance" "jenkins_instance" {
     Name = "Jenkins-EC2"
   }
 }
-  
-# EC2 Instance for ArgoCD and Minikube
-resource "aws_instance" "argocd_instance" {
-  ami                    = "ami-084568db4383264d4"  # Same Ubuntu AMI
-  instance_type          = "t2.large"
-  key_name               = var.key_name
-  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  associate_public_ip_address = true
-  subnet_id              = aws_subnet.subnet2.id
-  iam_instance_profile   = aws_iam_instance_profile.jenkins_instance_profile.name
-  
-  user_data = file("argocd-userdata.sh")
-
-  tags = { Name = "ArgoCD-EC2" }
-}
-
-# Output EC2 Public IP for ArgoCD
-output "argocd_instance_public_ip" {
-  value = aws_instance.argocd_instance.public_ip
-}
-
 
 # Output EC2 Public IP
 output "jenkins_instance_public_ip" {
