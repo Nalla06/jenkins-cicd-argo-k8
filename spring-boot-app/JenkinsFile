@@ -1,32 +1,38 @@
 pipeline {
-  agent { label 'built-in' }
+    agent { label 'built-in' }
     
-    
+    environment {
+        // Define SonarQube URL and other necessary environment variables
+        SONAR_URL = "http://18.208.106.59:9000"
+        GIT_REPO_NAME = "jenkins-cicd-argo-k8"  // Set your repository name
+        GIT_USER_NAME = "Nalla06"  // Set your GitHub username
+    }
     
     stages {
         stage('Checkout') {
             steps {
-                sh 'echo passed'
+                sh 'echo "Checkout started"'
                 git branch: 'main', url: 'https://github.com/Nalla06/jenkins-cicd-argo-k8.git'
             }
         }
         
         stage('Build and Test') {
             steps {
-                sh 'ls -ltr'
-                // build the project and create a JAR file
+                sh 'echo "Listing files in the current directory"'
+                sh 'ls -ltr'  // List files to confirm we are in the right directory
+                // Build the project and create a JAR file
                 sh 'cd spring-boot-app && mvn clean package'
             }
         }
         
         stage('Static Code Analysis') {
-            environment {
-                SONAR_URL = "http://18.208.106.59:9000"
-            }
             steps {
                 withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-                    sh "mvn sonar:sonar -Dsonar.host.url=http://18.208.106.59:9000 -Dsonar.login=${SONAR_AUTH_TOKEN}"
-}
+                    // Run SonarQube analysis inside the 'spring-boot-app' folder
+                    dir('spring-boot-app') {
+                        sh "mvn sonar:sonar -Dsonar.host.url=${SONAR_URL} -Dsonar.login=${SONAR_AUTH_TOKEN}"
+                    }
+                }
             }
         }
         
@@ -34,6 +40,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-cred', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        // Build and push Docker image
                         sh '''
                             cd spring-boot-app
                             docker build -t nalla06/spring-boot:${BUILD_NUMBER} .
@@ -48,6 +55,7 @@ pipeline {
         stage('Update Deployment File') {
             steps {
                 withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                    // Update deployment file and push changes to GitHub
                     sh '''
                         git config user.email "lakshmi.rajyam06@gmail.com"
                         git config user.name "Nalla06"
