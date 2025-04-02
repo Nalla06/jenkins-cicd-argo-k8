@@ -1,7 +1,10 @@
 # Ignore everything in the 'target' directory
-./target/*
+# Ignore target directory and build artifacts
+/target/
 *.jar
 *.class
+*.war
+
 
 # Ignore Terraform state files
 *.tfstate

@@ -1,4 +1,0 @@
-/home/nalla/jenkins-cicd-argo-k8/spring-boot-app/src/main/java/com/cicdpipeline/model/BuildInfo.java
-/home/nalla/jenkins-cicd-argo-k8/spring-boot-app/src/main/java/com/cicdpipeline/StartApplication.java
-/home/nalla/jenkins-cicd-argo-k8/spring-boot-app/src/main/java/com/cicdpipeline/controller/DashboardController.java
-/home/nalla/jenkins-cicd-argo-k8/spring-boot-app/src/main/java/com/cicdpipeline/service/BuildService.java
