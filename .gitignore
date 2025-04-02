@@ -1,5 +1,7 @@
 # Ignore everything in the 'target' directory
 ./target/*
+*.jar
+*.class
 
 # Ignore Terraform state files
 *.tfstate
