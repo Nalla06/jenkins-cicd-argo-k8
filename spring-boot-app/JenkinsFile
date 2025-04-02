@@ -1,5 +1,5 @@
 pipeline {
-  agent any  // This allows the pipeline to run on any available node
+  agent { label 'built-in' }
     
     
     
