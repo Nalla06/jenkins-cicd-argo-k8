@@ -31,3 +31,4 @@ terraform.tfvars.json
 target/
 *.jar
 *.class
+spring-boot-app@tmp/
