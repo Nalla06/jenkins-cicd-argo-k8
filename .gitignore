@@ -28,3 +28,6 @@ terraform.tfvars.json
 
 # Ignore sensitive Terraform files
 .env
+target/
+*.jar
+*.class
