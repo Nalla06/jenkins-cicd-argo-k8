@@ -7,7 +7,7 @@
 ## Overview
 This project sets up a complete CI/CD pipeline using Jenkins, ArgoCD, Kubernetes (Minikube), Docker, SonarQube, Git, and Maven. The infrastructure is provisioned using Terraform, and the necessary tools are installed automatically on AWS EC2 instances.
 
-Here are some of the images taken during the deployment time:
+### Here are some of the images taken during the deployment time:
 
 ![DevOps](images/image-01.png)
 ![DevOps](images/image-02.png)
